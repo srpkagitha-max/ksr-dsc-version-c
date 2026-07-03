@@ -19,3 +19,4 @@ function renderTop10(){let t='🏆 DSC TEST TOP 10\n\n';RESULTS.slice(0,10).forE
 window.copyTop10=()=>navigator.clipboard.writeText(top10.textContent);
 window.downloadResults=()=>download('Rank,Name,Phone,Code,Score,Total,Percentage,Correct,Wrong,Attempted,Warnings\n'+RESULTS.map((r,i)=>`${i+1},"${r.name||''}","${r.phone||''}",${r.code||''},${r.score},${r.total},${r.pct},${r.correct},${r.wrong},${r.attempted},${r.warnings||0}`).join('\n'),'results.csv');
 function download(text,name){let b=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()}
+
