@@ -1,1 +1,0 @@
-# ksr-dsc-version-c
