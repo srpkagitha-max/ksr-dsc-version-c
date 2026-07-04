@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Phase 4</title>
+  <title>KSR Admin - Version K Phase 5</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="adminLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="adminBrand">KSR Exam Admin Dashboard</div>
-          <div class="sub" id="adminSub">Version K Phase 4 - Bulk Import + QR Verify</div>
+          <div class="sub" id="adminSub">Version K Phase 5 - Pro Dashboard + Reports</div>
         </div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
@@ -32,11 +32,24 @@
 
     <div id="panel" class="hide">
       <div class="card top">
-        <h2>Dashboard <span class="badge">Version K Phase 4</span></h2>
+        <h2>Dashboard <span class="badge">Version K Phase 5</span></h2>
         <button class="d" onclick="logout()">Logout</button>
       </div>
 
+
       <div class="card">
+        <h2>🚀 Quick Navigation</h2>
+        <div class="k-tabs">
+          <button class="s" onclick="scrollToCard('superAdminCard')">Institutes</button>
+          <button class="s" onclick="scrollToCard('reportsCard')">Reports</button>
+          <button class="s" onclick="scrollToCard('studentManagerCard')">Students</button>
+          <button class="s" onclick="scrollToCard('examManagerCard')">Exams</button>
+          <button class="s" onclick="scrollToCard('questionEditorCard')">Questions</button>
+          <button class="s" onclick="scrollToCard('leaderboardCard')">Leaderboard</button>
+        </div>
+      </div>
+
+      <div class="card" id="superAdminCard">
         <div class="k-section-title">
           <h2>👑 Super Admin - Institute Management</h2>
           <span class="badge">K Phase 4</span>
@@ -85,7 +98,7 @@
       </div>
 
 
-      <div class="card">
+      <div class="card" id="logsCard">
         <h2>🧾 Activity Logs</h2>
         <div class="grid">
           <input id="logSearch" placeholder="Search logs by action / user / institute">
@@ -94,7 +107,7 @@
         <div id="logsBox"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="backupCard">
         <h2>☁️ Backup / Restore</h2>
         <div class="notice">Backup తీసుకుంటే exams, institutes, students data JSON file గా download అవుతుంది.</div>
         <button class="p" onclick="downloadFullBackup()">Download Full Backup JSON</button>
@@ -131,7 +144,22 @@
         <div id="verifyBox"></div>
       </div>
 
-      <div class="card">
+
+      <div class="card" id="reportsCard">
+        <h2>📈 Institute-wise Reports</h2>
+        <div class="grid">
+          <input id="reportInstituteId" placeholder="Institute ID or leave empty for all">
+          <input id="reportExamId" placeholder="Exam ID or leave empty for all">
+        </div>
+        <div class="k-tabs">
+          <button class="g" onclick="loadInstituteReports()">Load Report</button>
+          <button class="s" onclick="downloadStudentsCsv()">Download Students CSV</button>
+          <button class="s" onclick="downloadAllResultsCsv()">Download All Results CSV</button>
+        </div>
+        <div id="reportsBox"></div>
+      </div>
+
+      <div class="card" id="studentManagerCard">
         <h2>👨‍🎓 Student Manager</h2>
         <div class="grid">
           <input id="adminStudentSearch" placeholder="Search by phone / name / course">
@@ -140,14 +168,14 @@
         <div id="studentsBox"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="examManagerCard">
         <h2>📚 Exam Manager</h2>
         <button class="g" onclick="loadExamManager()">Load All Exams</button>
         <div id="examManager"></div>
       </div>
 
 
-      <div class="card">
+      <div class="card" id="questionEditorCard">
         <h2>✏️ Question Editor</h2>
         <div class="notice">Exam upload చేసిన తర్వాత ఒక్క question మాత్రమే edit/delete/add/reorder చేయడానికి ఈ section వాడండి.</div>
         <div class="grid">
@@ -157,7 +185,7 @@
         <div id="questionsEditorBox"></div>
       </div>
 
-      <div class="card">
+      <div class="card" id="brandingCard">
         <h2>🏫 Institute Branding</h2>
         <div class="grid">
           <div><label>Institute Name</label><input id="instituteName" value="KSR Coaching Center"></div>
@@ -218,7 +246,7 @@
         <pre id="codesBox"></pre>
       </div>
 
-      <div class="card">
+      <div class="card" id="leaderboardCard">
         <h2>📊 Statistics Dashboard</h2>
         <div id="statsBox" class="stat-grid">
           <div class="stat"><div class="label">Total Attempts</div><div class="value">0</div></div>

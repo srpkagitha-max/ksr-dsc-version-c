@@ -46,3 +46,24 @@ window.publicVerifyCertificate = async () => {
     alert('Verify failed: ' + e.message);
   }
 };
+
+
+// ================= Version K Phase 5 - Exam Security Notice =================
+window.addEventListener('beforeunload', (e) => {
+  try {
+    if (typeof started !== 'undefined' && started) {
+      e.preventDefault();
+      e.returnValue = 'Exam is running. Are you sure?';
+    }
+  } catch(err) {}
+});
+
+document.addEventListener('keydown', (e) => {
+  try {
+    if (typeof started !== 'undefined' && started) {
+      if ((e.ctrlKey || e.metaKey) && ['c','v','x','u','s','p'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+      }
+    }
+  } catch(err) {}
+});

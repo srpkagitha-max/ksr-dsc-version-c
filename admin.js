@@ -566,3 +566,159 @@ if (typeof window.printCertificate === 'function') {
     // Existing certificate opens in a print window. QR text is available through Verify section.
   };
 }
+
+
+// ================= Version K Phase 5 - Pro Dashboard + Reports =================
+window.scrollToCard = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+function csvEscape(v) {
+  return '"' + String(v ?? '').replace(/"/g, '""') + '"';
+}
+function downloadTextFile(text, filename, type='text/csv') {
+  const blob = new Blob([text], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+window.loadInstituteReports = async () => {
+  try {
+    const inst = (document.getElementById('reportInstituteId').value || '').trim().toUpperCase();
+    const examFilter = (document.getElementById('reportExamId').value || '').trim().toUpperCase();
+
+    const examsSnap = await getDocs(collection(db, 'exams'));
+    let exams = [];
+    examsSnap.forEach(d => {
+      const e = d.data();
+      if (inst && String(e.instituteId || '').toUpperCase() !== inst) return;
+      if (examFilter && d.id !== examFilter) return;
+      exams.push({ id: d.id, data: e });
+    });
+
+    let totalAttempts = 0, passCount = 0, failCount = 0, totalScore = 0, highest = 0;
+    let examRows = [];
+
+    for (const ex of exams) {
+      const attSnap = await getDocs(collection(db, 'exams', ex.id, 'attempts'));
+      let attempts = [];
+      attSnap.forEach(a => attempts.push(a.data()));
+
+      const passMark = Number(ex.data.passMark || 35);
+      let exPass = 0, exFail = 0, exHigh = 0, exScore = 0;
+      attempts.forEach(r => {
+        const sc = Number(r.score || 0);
+        const total = Number(r.total || 1);
+        const pct = (sc / total) * 100;
+        if (pct >= passMark) exPass++; else exFail++;
+        exHigh = Math.max(exHigh, sc);
+        exScore += sc;
+      });
+
+      totalAttempts += attempts.length;
+      passCount += exPass;
+      failCount += exFail;
+      totalScore += exScore;
+      highest = Math.max(highest, exHigh);
+
+      examRows.push({
+        examId: ex.id,
+        title: ex.data.title || '',
+        instituteId: ex.data.instituteId || '',
+        category: ex.data.branding?.examCategory || '',
+        attempts: attempts.length,
+        pass: exPass,
+        fail: exFail,
+        highest: exHigh,
+        avg: attempts.length ? (exScore / attempts.length).toFixed(2) : '0'
+      });
+    }
+
+    const avg = totalAttempts ? (totalScore / totalAttempts).toFixed(2) : '0';
+    const passPct = totalAttempts ? ((passCount / totalAttempts) * 100).toFixed(1) : '0';
+
+    let html = `<div class="stat-grid">
+      <div class="stat"><div class="label">Exams</div><div class="value">${exams.length}</div></div>
+      <div class="stat"><div class="label">Attempts</div><div class="value">${totalAttempts}</div></div>
+      <div class="stat"><div class="label">Highest</div><div class="value">${highest}</div></div>
+      <div class="stat"><div class="label">Average</div><div class="value">${avg}</div></div>
+      <div class="stat"><div class="label">Pass Count</div><div class="value">${passCount}</div></div>
+      <div class="stat"><div class="label">Pass %</div><div class="value">${passPct}%</div></div>
+    </div>`;
+
+    html += '<table><tr><th>Exam ID</th><th>Title</th><th>Institute</th><th>Category</th><th>Attempts</th><th>Pass</th><th>Fail</th><th>Highest</th><th>Avg</th></tr>';
+    examRows.forEach(r => html += `<tr><td>${r.examId}</td><td>${r.title}</td><td>${r.instituteId}</td><td>${r.category}</td><td>${r.attempts}</td><td>${r.pass}</td><td>${r.fail}</td><td>${r.highest}</td><td>${r.avg}</td></tr>`);
+    html += '</table>';
+
+    document.getElementById('reportsBox').innerHTML = html;
+    await logActivity('LOAD_INSTITUTE_REPORTS', { instituteId: inst, examId: examFilter, exams: exams.length, attempts: totalAttempts });
+  } catch(e) {
+    alert('Reports failed: ' + e.message);
+  }
+};
+
+window.downloadStudentsCsv = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'students'));
+    const rows = [['Name','Phone','Course','Institute','District','Qualification','Email']];
+    snap.forEach(d => {
+      const s = d.data();
+      rows.push([s.name||'', s.phone||d.id, s.course||'', s.institute||'', s.district||'', s.qualification||'', s.email||'']);
+    });
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+    downloadTextFile(csv, 'students-export.csv');
+    await logActivity('EXPORT_STUDENTS_CSV', { count: rows.length - 1 });
+  } catch(e) {
+    alert('Students export failed: ' + e.message);
+  }
+};
+
+window.downloadAllResultsCsv = async () => {
+  try {
+    const examsSnap = await getDocs(collection(db, 'exams'));
+    const rows = [['Exam ID','Exam Title','Institute ID','Name','Phone','Code','Score','Total','Percent','Correct','Wrong','Warnings','TimeSec','SubmittedAt']];
+    for (const exDoc of examsSnap.docs) {
+      const e = exDoc.data();
+      const attSnap = await getDocs(collection(db, 'exams', exDoc.id, 'attempts'));
+      attSnap.forEach(aDoc => {
+        const r = aDoc.data();
+        rows.push([exDoc.id, e.title||'', e.instituteId||'', r.name||'', r.phone||'', r.code||'', r.score||0, r.total||0, r.pct||'', r.correct||0, r.wrong||0, r.warnings||0, r.timeTakenSec||0, r.submittedAt?.seconds ? new Date(r.submittedAt.seconds*1000).toISOString() : '']);
+      });
+    }
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\n');
+    downloadTextFile(csv, 'all-results-export.csv');
+    await logActivity('EXPORT_ALL_RESULTS_CSV', { count: rows.length - 1 });
+  } catch(e) {
+    alert('Results export failed: ' + e.message);
+  }
+};
+
+// More detailed exam preview
+window.previewExam = async (id) => {
+  const ex = await getDoc(doc(db, 'exams', id));
+  if (!ex.exists()) return alert('Exam not found');
+  const e = ex.data(), b = e.branding || {};
+  let html = `<html><head><title>Exam Preview</title><style>body{font-family:Arial;padding:20px} .q{border:1px solid #ddd;border-radius:12px;padding:12px;margin:10px 0}</style></head><body>
+  <h1>${b.instituteName || 'KSR'} - ${e.title || id}</h1>
+  <p>Exam ID: <b>${id}</b> | Questions: ${(e.questions||[]).length}</p>`;
+  (e.questions || []).forEach((q,i) => {
+    html += `<div class="q"><b>Q${i+1}. ${q.q}</b><ol type="A">${(q.o||[]).map((o,idx)=>`<li>${o} ${idx===Number(q.a)?'✅':''}</li>`).join('')}</ol></div>`;
+  });
+  html += '<button onclick="window.print()">Print</button></body></html>';
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+};
+
+// Patch Exam Manager to include Preview button if possible
+const oldLoadExamManagerK5 = window.loadExamManager;
+window.loadExamManager = async () => {
+  await oldLoadExamManagerK5();
+  const box = document.getElementById('examManager');
+  if (box && !box.innerHTML.includes('Preview')) {
+    box.innerHTML = box.innerHTML.replaceAll('Hall Tickets</button>', 'Hall Tickets</button><button class="s" onclick="previewExam(this.closest(\\'.manager-card\\').querySelector(\\'b\\').textContent.trim())">Preview</button>');
+  }
+};
