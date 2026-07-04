@@ -200,3 +200,238 @@ window.moveQuestion = (i, dir) => {
   [QE_QUESTIONS[i], QE_QUESTIONS[j]] = [QE_QUESTIONS[j], QE_QUESTIONS[i]];
   renderQuestionEditor();
 };
+
+
+// ================= Version K Phase 3 - Logs + Backup + Delete =================
+async function logActivity(action, details = {}) {
+  try {
+    const id = `${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    await setDoc(doc(db, 'activityLogs', id), {
+      action,
+      details,
+      user: auth.currentUser ? auth.currentUser.email : '',
+      createdAt: serverTimestamp(),
+      createdMs: Date.now(),
+      version: 'K3'
+    }, { merge: true });
+  } catch(e) {
+    console.warn('logActivity failed', e);
+  }
+}
+
+// wrap existing functions with logs safely
+const oldSaveInstituteK3 = window.saveInstitute;
+window.saveInstitute = async () => {
+  await oldSaveInstituteK3();
+  await logActivity('SAVE_INSTITUTE', {
+    instituteId: (document.getElementById('instId')?.value || '').trim().toUpperCase(),
+    name: document.getElementById('instName')?.value || '',
+    status: document.getElementById('instStatus')?.value || ''
+  });
+};
+
+const oldUploadExamK3 = window.uploadExam;
+window.uploadExam = async () => {
+  await oldUploadExamK3();
+  await logActivity('UPLOAD_EXAM', {
+    examId: (document.getElementById('examId')?.value || '').trim().toUpperCase(),
+    title: document.getElementById('title')?.value || '',
+    instituteId: (document.getElementById('instId')?.value || '').trim().toUpperCase()
+  });
+};
+
+if (typeof window.saveAllQuestions === 'function') {
+  const oldSaveAllQuestionsK3 = window.saveAllQuestions;
+  window.saveAllQuestions = async () => {
+    await oldSaveAllQuestionsK3();
+    await logActivity('SAVE_ALL_QUESTIONS', {
+      examId: (document.getElementById('qeExamId')?.value || document.getElementById('examId')?.value || '').trim().toUpperCase()
+    });
+  };
+}
+
+// Add delete institute full action
+window.deleteInstitute = async (id) => {
+  if (!confirm(`Delete institute ${id}? This cannot be undone easily.`)) return;
+
+  const d = await getDoc(doc(db, 'institutes', id));
+  const data = d.exists() ? d.data() : {};
+
+  await setDoc(doc(db, 'deletedInstitutes', id), {
+    ...data,
+    deletedAt: serverTimestamp(),
+    deletedBy: auth.currentUser ? auth.currentUser.email : '',
+    originalId: id
+  }, { merge: true });
+
+  // Firestore client SDK has no direct delete import in this file,
+  // so we soft-delete by marking status Deleted. This is safer.
+  await setDoc(doc(db, 'institutes', id), {
+    status: 'Deleted',
+    deletedAt: serverTimestamp(),
+    deletedBy: auth.currentUser ? auth.currentUser.email : ''
+  }, { merge: true });
+
+  if (data.adminEmail) {
+    await setDoc(doc(db, 'instituteAdmins', data.adminEmail), {
+      status: 'Deleted',
+      deletedAt: serverTimestamp()
+    }, { merge: true });
+  }
+
+  await logActivity('DELETE_INSTITUTE_SOFT', { instituteId: id, name: data.name || '' });
+  alert('Institute marked as Deleted');
+  loadInstitutes();
+};
+
+// Patch loadInstitutes to show Delete button and Deleted status
+const oldLoadInstitutesK3 = window.loadInstitutes;
+window.loadInstitutes = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'institutes'));
+    let html = '<h3>🏢 Institutes List</h3>';
+    let count = 0;
+
+    snap.forEach(d => {
+      const x = d.data();
+      const statusClass = x.status === 'Active' ? 'status-active' : 'status-blocked';
+      html += `<div class="inst-card">
+        <div class="inst-head">
+          ${x.logoUrl ? `<img src="${x.logoUrl}" class="inst-logo-small">` : '<div class="inst-logo-small"></div>'}
+          <div>
+            <b>${x.name || ''}</b> <span class="pill">${d.id}</span><br>
+            <span class="${statusClass}">${x.status || ''}</span> | ${x.plan || 'Free'} | Expiry: ${x.expiryDate || '-'}
+          </div>
+        </div>
+        <p class="small">
+          Admin: ${x.adminEmail || '-'}<br>
+          Contact: ${x.contact || '-'}<br>
+          Address: ${x.address || '-'}
+        </p>
+        <button class="s" onclick="editInstitute('${d.id}')">Edit</button>
+        <button class="o" onclick="useInstituteBranding('${d.id}')">Use Branding</button>
+        <button class="d" onclick="blockInstitute('${d.id}')">Block</button>
+        <button class="g" onclick="activateInstitute('${d.id}')">Activate</button>
+        <button class="d" onclick="deleteInstitute('${d.id}')">Delete</button>
+      </div>`;
+      count++;
+    });
+
+    document.getElementById('institutesBox').innerHTML = count ? html : '<p>No institutes found.</p>';
+  } catch (e) {
+    alert('Load institutes failed: ' + e.message);
+  }
+};
+
+window.loadActivityLogs = async () => {
+  try {
+    const q = (document.getElementById('logSearch')?.value || '').trim().toLowerCase();
+    const snap = await getDocs(collection(db, 'activityLogs'));
+    let logs = [];
+    snap.forEach(d => logs.push({ id: d.id, ...d.data() }));
+    logs.sort((a,b) => (b.createdMs || 0) - (a.createdMs || 0));
+
+    if (q) {
+      logs = logs.filter(x => JSON.stringify(x).toLowerCase().includes(q));
+    }
+
+    let html = '';
+    logs.slice(0, 100).forEach(x => {
+      const date = x.createdMs ? new Date(x.createdMs).toLocaleString() : '-';
+      html += `<div class="log-card">
+        <b>${x.action || ''}</b><br>
+        <span class="small">User: ${x.user || '-'} | Time: ${date}</span>
+        <pre class="backup-box">${JSON.stringify(x.details || {}, null, 2)}</pre>
+      </div>`;
+    });
+    document.getElementById('logsBox').innerHTML = html || '<p>No logs found.</p>';
+  } catch(e) {
+    alert('Load logs failed: ' + e.message);
+  }
+};
+
+async function collectionToArray(name) {
+  const snap = await getDocs(collection(db, name));
+  const arr = [];
+  snap.forEach(d => arr.push({ id: d.id, data: d.data() }));
+  return arr;
+}
+
+window.downloadFullBackup = async () => {
+  try {
+    const backup = {
+      version: 'K3-backup',
+      createdAt: new Date().toISOString(),
+      createdBy: auth.currentUser ? auth.currentUser.email : '',
+      institutes: await collectionToArray('institutes'),
+      instituteAdmins: await collectionToArray('instituteAdmins'),
+      students: await collectionToArray('students'),
+      exams: []
+    };
+
+    const examsSnap = await getDocs(collection(db, 'exams'));
+    for (const exDoc of examsSnap.docs) {
+      const examObj = { id: exDoc.id, data: exDoc.data(), codes: [], attempts: [] };
+      const codesSnap = await getDocs(collection(db, 'exams', exDoc.id, 'codes'));
+      codesSnap.forEach(c => examObj.codes.push({ id: c.id, data: c.data() }));
+      const attemptsSnap = await getDocs(collection(db, 'exams', exDoc.id, 'attempts'));
+      attemptsSnap.forEach(a => examObj.attempts.push({ id: a.id, data: a.data() }));
+      backup.exams.push(examObj);
+    }
+
+    const text = JSON.stringify(backup, null, 2);
+    const blob = new Blob([text], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ksr-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+
+    await logActivity('DOWNLOAD_BACKUP', {
+      institutes: backup.institutes.length,
+      students: backup.students.length,
+      exams: backup.exams.length
+    });
+  } catch(e) {
+    alert('Backup failed: ' + e.message);
+  }
+};
+
+window.restoreBackupFromText = async () => {
+  if (!confirm('Restore backup? Existing matching documents will be overwritten.')) return;
+
+  try {
+    const text = document.getElementById('restoreJson').value.trim();
+    if (!text) return alert('Backup JSON paste చేయండి');
+
+    const backup = JSON.parse(text);
+
+    for (const item of (backup.institutes || [])) {
+      await setDoc(doc(db, 'institutes', item.id), item.data, { merge: true });
+    }
+    for (const item of (backup.instituteAdmins || [])) {
+      await setDoc(doc(db, 'instituteAdmins', item.id), item.data, { merge: true });
+    }
+    for (const item of (backup.students || [])) {
+      await setDoc(doc(db, 'students', item.id), item.data, { merge: true });
+    }
+    for (const ex of (backup.exams || [])) {
+      await setDoc(doc(db, 'exams', ex.id), ex.data, { merge: true });
+      for (const c of (ex.codes || [])) {
+        await setDoc(doc(db, 'exams', ex.id, 'codes', c.id), c.data, { merge: true });
+      }
+      for (const a of (ex.attempts || [])) {
+        await setDoc(doc(db, 'exams', ex.id, 'attempts', a.id), a.data, { merge: true });
+      }
+    }
+
+    await logActivity('RESTORE_BACKUP', {
+      institutes: (backup.institutes || []).length,
+      students: (backup.students || []).length,
+      exams: (backup.exams || []).length
+    });
+
+    alert('Backup restored successfully');
+  } catch(e) {
+    alert('Restore failed: ' + e.message);
+  }
+};

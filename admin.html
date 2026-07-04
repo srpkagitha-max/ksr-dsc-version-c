@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Complete</title>
+  <title>KSR Admin - Version K Phase 3</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="adminLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="adminBrand">KSR Exam Admin Dashboard</div>
-          <div class="sub" id="adminSub">Version K Complete - All-in-One Master Build</div>
+          <div class="sub" id="adminSub">Version K Phase 3 - Logs + Backup + Delete</div>
         </div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
@@ -32,7 +32,7 @@
 
     <div id="panel" class="hide">
       <div class="card top">
-        <h2>Dashboard <span class="badge">Version K Complete</span></h2>
+        <h2>Dashboard <span class="badge">Version K Phase 3</span></h2>
         <button class="d" onclick="logout()">Logout</button>
       </div>
 
@@ -82,6 +82,25 @@
           <p><b>Institute Access:</b> <span id="currentInstituteAccess">Super Admin / All Institutes</span></p>
         </div>
         <button class="s" onclick="checkAdminAccess()">Check My Access</button>
+      </div>
+
+
+      <div class="card">
+        <h2>🧾 Activity Logs</h2>
+        <div class="grid">
+          <input id="logSearch" placeholder="Search logs by action / user / institute">
+          <button class="g" onclick="loadActivityLogs()">Load Logs</button>
+        </div>
+        <div id="logsBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>☁️ Backup / Restore</h2>
+        <div class="notice">Backup తీసుకుంటే exams, institutes, students data JSON file గా download అవుతుంది.</div>
+        <button class="p" onclick="downloadFullBackup()">Download Full Backup JSON</button>
+        <label>Restore JSON</label>
+        <textarea id="restoreJson" placeholder="Backup JSON paste చేయండి..."></textarea>
+        <button class="o" onclick="restoreBackupFromText()">Restore Backup</button>
       </div>
 
       <div class="card">
