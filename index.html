@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Online Exam - Version K Phase 5 Login Fix</title>
+  <title>KSR Online Exam - Version K Phase 6</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="studentLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="mainTitle">KSR Online Exam Platform</div>
-          <div class="sub" id="mainSub">Version K Phase 5 - Pro CBT Platform</div>
+          <div class="sub" id="mainSub">Version K Phase 6 - Pro CBT Platform</div>
         </div>
       </div>
       <div class="nav"><a href="admin.html">Admin</a></div>
@@ -21,6 +21,13 @@
   </div>
 
   <div class="wrap">
+
+    <div class="card">
+      <h2>📢 Announcements</h2>
+      <button class="s" onclick="loadPublicAnnouncements()">Load Announcements</button>
+      <div id="publicAnnouncementsBox"></div>
+    </div>
+
     <div class="card">
       <h2>👨‍🎓 Student Portal</h2>
       <div class="grid">

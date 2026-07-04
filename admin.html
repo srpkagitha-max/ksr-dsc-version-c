@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Phase 5 Login Fix</title>
+  <title>KSR Admin - Version K Phase 6</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="adminLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="adminBrand">KSR Exam Admin Dashboard</div>
-          <div class="sub" id="adminSub">Version K Phase 5 - Pro Dashboard + Reports</div>
+          <div class="sub" id="adminSub">Version K Phase 6 - Charts + QR + Dark Mode</div>
         </div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
@@ -32,7 +32,7 @@
 
     <div id="panel" class="hide">
       <div class="card top">
-        <h2>Dashboard <span class="badge">Version K Phase 5</span></h2>
+        <h2>Dashboard <span class="badge">Version K Phase 6</span></h2>
         <button class="d" onclick="logout()">Logout</button>
       </div>
 
@@ -144,6 +144,31 @@
         <div id="verifyBox"></div>
       </div>
 
+
+
+      <div class="card" id="announcementsCard">
+        <h2>📢 Announcements</h2>
+        <div class="grid">
+          <input id="announceTitle" placeholder="Announcement title">
+          <input id="announceTag" placeholder="Tag ex: Important / Exam / Result">
+        </div>
+        <textarea id="announceMsg" placeholder="Announcement message..."></textarea>
+        <button class="p" onclick="saveAnnouncement()">Save Announcement</button>
+        <button class="g" onclick="loadAnnouncements()">Load Announcements</button>
+        <div id="announcementsBox"></div>
+      </div>
+
+      <div class="card" id="phase6ChartsCard">
+        <h2>📊 Live Dashboard Charts</h2>
+        <button class="g" onclick="loadDashboardCharts()">Load Charts</button>
+        <div id="chartsBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>🌙 Appearance</h2>
+        <button class="s" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        <div class="small">Mobile viewing కోసం dark mode on/off చేయవచ్చు.</div>
+      </div>
 
       <div class="card" id="reportsCard">
         <h2>📈 Institute-wise Reports</h2>
