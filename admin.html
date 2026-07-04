@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR DSC Admin - Version F</title>
+  <title>KSR DSC Admin - Version G</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="wrap top">
       <div>
         <div class="brand">KSR DSC Admin Dashboard</div>
-        <div class="sub">Version F - Student Search + Certificate</div>
+        <div class="sub">Version G - Question Analysis + Reports</div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
     </div>
@@ -30,7 +30,7 @@
 
     <div id="panel" class="hide">
       <div class="card top">
-        <h2>Dashboard <span class="badge">Version F</span></h2>
+        <h2>Dashboard <span class="badge">Version G</span></h2>
         <button class="d" onclick="logout()">Logout</button>
       </div>
 
@@ -108,9 +108,17 @@
         <button class="s" onclick="downloadResults()">Download Results CSV</button>
         <button class="s" onclick="copyTop10()">Copy Top 10</button>
         <button class="s" onclick="clearSearch()">Show All</button>
+        <button class="o" onclick="renderQuestionAnalysis()">Question Analysis</button>
+        <button class="o" onclick="printAnswerKey()">Answer Key / Report</button>
 
         <div id="leader"></div>
         <pre id="top10"></pre>
+      </div>
+
+      <div class="card">
+        <h2>📈 Question-wise Analysis</h2>
+        <div class="notice">ఈ analysis కొత్త attempts లో detailed data save అయినప్పుడు పూర్తి వివరాలతో వస్తుంది. పాత attempts కి correct/wrong count only may be limited.</div>
+        <div id="analysisBox" class="small">Load Results నొక్కి, తర్వాత Question Analysis నొక్కండి.</div>
       </div>
     </div>
   </div>

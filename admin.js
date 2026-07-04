@@ -214,7 +214,7 @@ window.uploadExam = async () => {
       questions,
       createdAt: serverTimestamp(),
       createdBy: auth.currentUser ? auth.currentUser.email : 'admin',
-      version: 'F-search-certificate'
+      version: 'G-question-analysis'
     });
 
     CODES = gen(Number($('count').value) || 100, $('prefix').value || 'DSC');
@@ -335,45 +335,61 @@ window.printCertificate = (studentCode) => {
   const status = pctNum(r) >= passMark() ? 'PASS' : 'FAIL';
   const win = window.open('', '_blank');
   win.document.write(`
-    <html>
-    <head>
-      <title>Result Certificate</title>
-      <style>
-        body{font-family:Arial,sans-serif;background:#f3f6fb;padding:30px}
-        .cert{max-width:800px;margin:auto;background:white;border:8px solid #0b57d0;border-radius:20px;padding:40px;text-align:center}
-        h1{color:#0b57d0;margin-bottom:5px}
-        .sub{font-size:18px;color:#555}
-        .name{font-size:32px;font-weight:900;margin:25px 0}
-        .score{font-size:24px;margin:12px}
-        .rank{font-size:36px;font-weight:900;color:#0b57d0}
-        .pass{color:#137333;font-weight:900}
-        .fail{color:#d93025;font-weight:900}
-        table{margin:25px auto;border-collapse:collapse}
-        td{border:1px solid #ddd;padding:10px 20px;text-align:left}
-        button{padding:12px 18px;border:0;border-radius:10px;background:#0b57d0;color:white;font-weight:900}
-        @media print{button{display:none} body{background:white}}
-      </style>
-    </head>
-    <body>
-      <div class="cert">
-        <h1>KSR DSC Online Exam</h1>
-        <div class="sub">Result Certificate</div>
-        <div class="name">${r.name || 'Student'}</div>
-        <div class="rank">${r.medal || '🏆'} Rank ${r.rank}</div>
-        <table>
-          <tr><td>Exam ID</td><td>${$('leadExamId').value.trim().toUpperCase()}</td></tr>
-          <tr><td>Phone</td><td>${r.phone || ''}</td></tr>
-          <tr><td>Code</td><td>${r.code || ''}</td></tr>
-          <tr><td>Score</td><td>${r.score || 0} / ${r.total || 0}</td></tr>
-          <tr><td>Percentage</td><td>${r.pct || ''}</td></tr>
-          <tr><td>Time Taken</td><td>${formatTime(r.timeTakenSec)}</td></tr>
-          <tr><td>Status</td><td class="${status === 'PASS' ? 'pass' : 'fail'}">${status}</td></tr>
-        </table>
-        <button onclick="window.print()">Print / Save PDF</button>
-      </div>
-    </body>
-    </html>
-  `);
+    <html><head><title>Result Certificate</title><style>
+    body{font-family:Arial,sans-serif;background:#f3f6fb;padding:30px}.cert{max-width:800px;margin:auto;background:white;border:8px solid #0b57d0;border-radius:20px;padding:40px;text-align:center}
+    h1{color:#0b57d0;margin-bottom:5px}.sub{font-size:18px;color:#555}.name{font-size:32px;font-weight:900;margin:25px 0}.rank{font-size:36px;font-weight:900;color:#0b57d0}
+    .pass{color:#137333;font-weight:900}.fail{color:#d93025;font-weight:900}table{margin:25px auto;border-collapse:collapse}td{border:1px solid #ddd;padding:10px 20px;text-align:left}
+    button{padding:12px 18px;border:0;border-radius:10px;background:#0b57d0;color:white;font-weight:900}@media print{button{display:none}body{background:white}}
+    </style></head><body><div class="cert">
+    <h1>KSR DSC Online Exam</h1><div class="sub">Result Certificate</div><div class="name">${r.name || 'Student'}</div><div class="rank">${r.medal || '🏆'} Rank ${r.rank}</div>
+    <table><tr><td>Exam ID</td><td>${$('leadExamId').value.trim().toUpperCase()}</td></tr><tr><td>Phone</td><td>${r.phone || ''}</td></tr><tr><td>Code</td><td>${r.code || ''}</td></tr>
+    <tr><td>Score</td><td>${r.score || 0} / ${r.total || 0}</td></tr><tr><td>Percentage</td><td>${r.pct || ''}</td></tr><tr><td>Time Taken</td><td>${formatTime(r.timeTakenSec)}</td></tr>
+    <tr><td>Status</td><td class="${status === 'PASS' ? 'pass' : 'fail'}">${status}</td></tr></table><button onclick="window.print()">Print / Save PDF</button></div></body></html>`);
+  win.document.close();
+};
+
+window.renderQuestionAnalysis = () => {
+  if (!CURRENT_EXAM || !CURRENT_EXAM.questions) return alert('First Load Results');
+  const qs = CURRENT_EXAM.questions || [];
+  const analysis = qs.map((q, i) => ({
+    no: i + 1,
+    question: q.q,
+    correctText: q.o?.[q.a] || '',
+    attempted: 0,
+    correct: 0,
+    wrong: 0,
+    blank: 0
+  }));
+
+  RESULTS.forEach(r => {
+    if (Array.isArray(r.answerDetails)) {
+      r.answerDetails.forEach((d, idx) => {
+        if (!analysis[idx]) return;
+        if (d.selectedText) analysis[idx].attempted++;
+        else analysis[idx].blank++;
+        if (d.isCorrect) analysis[idx].correct++;
+        else if (d.selectedText) analysis[idx].wrong++;
+      });
+    }
+  });
+
+  let html = '<table><tr><th>Q.No</th><th>Question</th><th>Correct Answer</th><th>Attempted</th><th>Correct</th><th>Wrong</th><th>Blank</th><th>Accuracy</th></tr>';
+  analysis.forEach(a => {
+    const acc = a.attempted ? ((a.correct / a.attempted) * 100).toFixed(1) + '%' : '0%';
+    html += `<tr><td>${a.no}</td><td>${a.question || ''}</td><td>${a.correctText || ''}</td><td>${a.attempted}</td><td>${a.correct}</td><td>${a.wrong}</td><td>${a.blank}</td><td>${acc}</td></tr>`;
+  });
+  html += '</table>';
+  $('analysisBox').innerHTML = html;
+};
+
+window.printAnswerKey = () => {
+  if (!CURRENT_EXAM || !CURRENT_EXAM.questions) return alert('First Load Results');
+  const win = window.open('', '_blank');
+  let rows = '';
+  (CURRENT_EXAM.questions || []).forEach((q, i) => {
+    rows += `<tr><td>${i + 1}</td><td>${q.q || ''}</td><td>${q.o?.[q.a] || ''}</td></tr>`;
+  });
+  win.document.write(`<html><head><title>Answer Key</title><style>body{font-family:Arial;padding:25px}h1{text-align:center;color:#0b57d0}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f1f3f5}@media print{button{display:none}}</style></head><body><h1>KSR DSC Answer Key</h1><button onclick="window.print()">Print / Save PDF</button><table><tr><th>Q.No</th><th>Question</th><th>Correct Answer</th></tr>${rows}</table></body></html>`);
   win.document.close();
 };
 
