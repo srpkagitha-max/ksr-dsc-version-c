@@ -38,3 +38,147 @@ window.renderQuestionAnalysis=()=>{if(!CURRENT_EXAM)return alert('First Load Res
 window.printAnswerKey=()=>{if(!CURRENT_EXAM)return alert('First Load Results');let rows='';(CURRENT_EXAM.questions||[]).forEach((q,i)=>rows+=`<tr><td>${i+1}</td><td>${q.q}</td><td>${q.o?.[q.a]||''}</td></tr>`);let win=window.open('','_blank');win.document.write(`<html><body><h1>Answer Key</h1><button onclick="window.print()">Print</button><table border="1" cellpadding="8"><tr><th>No</th><th>Question</th><th>Answer</th></tr>${rows}</table></body></html>`);win.document.close()};
 window.downloadResults=()=>download('Rank,Name,Phone,Code,Score,Total,Percentage\n'+RESULTS.map(r=>`${r.rank},"${r.name||''}","${r.phone||''}",${r.code||''},${r.score||0},${r.total||0},${r.pct||''}`).join('\n'),'results.csv');function download(text,name){let blob=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()}
 window.loadStudents=async()=>{try{const q=$('adminStudentSearch').value.trim().toLowerCase(),snap=await getDocs(collection(db,'students'));let rows=[];snap.forEach(d=>{let s=d.data(),text=`${s.name||''} ${s.phone||''} ${s.course||''} ${s.institute||''}`.toLowerCase();if(!q||text.includes(q))rows.push(s)});let html='<table><tr><th>Name</th><th>Phone</th><th>Course</th><th>District</th><th>Qualification</th><th>Institute</th></tr>';rows.forEach(s=>html+=`<tr><td>${s.name||''}</td><td>${s.phone||''}</td><td>${s.course||''}</td><td>${s.district||''}</td><td>${s.qualification||''}</td><td>${s.institute||''}</td></tr>`);$('studentsBox').innerHTML=rows.length?html+'</table>':'<p>No students found.</p>'}catch(e){alert('Students load failed: '+e.message)}};
+
+
+// ================= Version K Phase 2 - Question Editor =================
+let QE_EXAM_ID = '';
+let QE_EXAM_DATA = null;
+let QE_QUESTIONS = [];
+
+function qeEsc(s){
+  return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+window.loadQuestionsForEdit = async () => {
+  QE_EXAM_ID = (document.getElementById('qeExamId').value || document.getElementById('examId').value || '').trim().toUpperCase();
+  if (!QE_EXAM_ID) return alert('Exam ID enter చేయండి');
+
+  const ex = await getDoc(doc(db, 'exams', QE_EXAM_ID));
+  if (!ex.exists()) return alert('Exam not found');
+
+  QE_EXAM_DATA = ex.data();
+  QE_QUESTIONS = JSON.parse(JSON.stringify(QE_EXAM_DATA.questions || []));
+
+  renderQuestionEditor();
+};
+
+function renderQuestionEditor(){
+  const box = document.getElementById('questionsEditorBox');
+  if (!QE_QUESTIONS.length) {
+    box.innerHTML = '<p>No questions found.</p><button class="p" onclick="addNewQuestion()">Add First Question</button>';
+    return;
+  }
+
+  let html = `<div class="top"><b>Total Questions: ${QE_QUESTIONS.length}</b>
+    <button class="p" onclick="addNewQuestion()">➕ Add Question</button>
+    <button class="g" onclick="saveAllQuestions()">💾 Save All Changes</button>
+  </div>`;
+
+  QE_QUESTIONS.forEach((q, i) => {
+    const opts = q.o || ['', '', '', ''];
+    html += `<div class="qedit">
+      <div class="top">
+        <span class="qno">Q${i+1}</span>
+        <div>
+          <button class="s" onclick="moveQuestion(${i},-1)">↑</button>
+          <button class="s" onclick="moveQuestion(${i},1)">↓</button>
+          <button class="d" onclick="deleteQuestion(${i})">Delete</button>
+        </div>
+      </div>
+      <label>Subject</label>
+      <input id="qe_sub_${i}" value="${qeEsc(q.subject || 'General')}">
+      <label>Question</label>
+      <textarea id="qe_q_${i}">${qeEsc(q.q || '')}</textarea>
+      <div class="grid">
+        <div><label>Option A</label><input id="qe_o_${i}_0" value="${qeEsc(opts[0] || '')}"></div>
+        <div><label>Option B</label><input id="qe_o_${i}_1" value="${qeEsc(opts[1] || '')}"></div>
+      </div>
+      <div class="grid">
+        <div><label>Option C</label><input id="qe_o_${i}_2" value="${qeEsc(opts[2] || '')}"></div>
+        <div><label>Option D</label><input id="qe_o_${i}_3" value="${qeEsc(opts[3] || '')}"></div>
+      </div>
+      <label>Correct Answer</label>
+      <select id="qe_a_${i}">
+        <option value="0" ${Number(q.a||0)===0?'selected':''}>A</option>
+        <option value="1" ${Number(q.a||0)===1?'selected':''}>B</option>
+        <option value="2" ${Number(q.a||0)===2?'selected':''}>C</option>
+        <option value="3" ${Number(q.a||0)===3?'selected':''}>D</option>
+      </select>
+      <button class="p" onclick="saveSingleQuestion(${i})">Save This Question</button>
+    </div>`;
+  });
+
+  box.innerHTML = html;
+}
+
+function readQuestionFromForm(i){
+  return {
+    subject: document.getElementById(`qe_sub_${i}`).value.trim() || 'General',
+    q: document.getElementById(`qe_q_${i}`).value.trim(),
+    o: [
+      document.getElementById(`qe_o_${i}_0`).value.trim(),
+      document.getElementById(`qe_o_${i}_1`).value.trim(),
+      document.getElementById(`qe_o_${i}_2`).value.trim(),
+      document.getElementById(`qe_o_${i}_3`).value.trim()
+    ],
+    a: Number(document.getElementById(`qe_a_${i}`).value)
+  };
+}
+
+function syncEditorToMemory(){
+  QE_QUESTIONS = QE_QUESTIONS.map((_, i) => readQuestionFromForm(i));
+}
+
+window.saveSingleQuestion = async (i) => {
+  QE_QUESTIONS[i] = readQuestionFromForm(i);
+  if (!QE_QUESTIONS[i].q || QE_QUESTIONS[i].o.some(x => !x)) {
+    return alert('Question + 4 options తప్పనిసరి');
+  }
+  await setDoc(doc(db, 'exams', QE_EXAM_ID), {
+    questions: QE_QUESTIONS,
+    updatedAt: serverTimestamp(),
+    questionEditedAt: serverTimestamp(),
+    version: 'K2-question-editor'
+  }, { merge: true });
+  alert(`Q${i+1} saved successfully`);
+};
+
+window.saveAllQuestions = async () => {
+  syncEditorToMemory();
+  for (const q of QE_QUESTIONS) {
+    if (!q.q || q.o.some(x => !x)) return alert('All questions must have question text + 4 options');
+  }
+  await setDoc(doc(db, 'exams', QE_EXAM_ID), {
+    questions: QE_QUESTIONS,
+    updatedAt: serverTimestamp(),
+    questionEditedAt: serverTimestamp(),
+    version: 'K2-question-editor'
+  }, { merge: true });
+  alert('All questions saved successfully');
+};
+
+window.addNewQuestion = () => {
+  try { if (QE_QUESTIONS.length) syncEditorToMemory(); } catch(e) {}
+  QE_QUESTIONS.push({
+    subject: 'General',
+    q: 'New question?',
+    o: ['Option A', 'Option B', 'Option C', 'Option D'],
+    a: 0
+  });
+  renderQuestionEditor();
+};
+
+window.deleteQuestion = (i) => {
+  if (!confirm(`Delete Q${i+1}?`)) return;
+  try { syncEditorToMemory(); } catch(e) {}
+  QE_QUESTIONS.splice(i, 1);
+  renderQuestionEditor();
+};
+
+window.moveQuestion = (i, dir) => {
+  try { syncEditorToMemory(); } catch(e) {}
+  const j = i + dir;
+  if (j < 0 || j >= QE_QUESTIONS.length) return;
+  [QE_QUESTIONS[i], QE_QUESTIONS[j]] = [QE_QUESTIONS[j], QE_QUESTIONS[i]];
+  renderQuestionEditor();
+};
