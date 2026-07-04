@@ -26,3 +26,32 @@ window.printCertificate=(studentCode)=>{let r=RESULTS.find(x=>String(x.code||'')
 window.renderQuestionAnalysis=()=>{if(!CURRENT_EXAM)return alert('First Load Results');let qs=CURRENT_EXAM.questions||[],analysis=qs.map((q,i)=>({no:i+1,question:q.q,correctText:q.o?.[q.a]||'',attempted:0,correct:0,wrong:0,blank:0}));RESULTS.forEach(r=>{if(Array.isArray(r.answerDetails))r.answerDetails.forEach(d=>{let idx=Number(d.originalIndex);if(!analysis[idx])return;if(d.selectedText)analysis[idx].attempted++;else analysis[idx].blank++;if(d.isCorrect)analysis[idx].correct++;else if(d.selectedText)analysis[idx].wrong++})});let html='<table><tr><th>Q.No</th><th>Question</th><th>Correct</th><th>Attempted</th><th>Right</th><th>Wrong</th><th>Blank</th></tr>';analysis.forEach(a=>html+=`<tr><td>${a.no}</td><td>${a.question}</td><td>${a.correctText}</td><td>${a.attempted}</td><td>${a.correct}</td><td>${a.wrong}</td><td>${a.blank}</td></tr>`);$('analysisBox').innerHTML=html+'</table>'};
 window.printAnswerKey=()=>{if(!CURRENT_EXAM)return alert('First Load Results');let rows='';(CURRENT_EXAM.questions||[]).forEach((q,i)=>rows+=`<tr><td>${i+1}</td><td>${q.q}</td><td>${q.o?.[q.a]||''}</td></tr>`);let win=window.open('','_blank');win.document.write(`<html><body><h1>Answer Key</h1><button onclick="window.print()">Print</button><table border="1" cellpadding="8"><tr><th>No</th><th>Question</th><th>Answer</th></tr>${rows}</table></body></html>`);win.document.close()};
 window.downloadResults=()=>download('Rank,Name,Phone,Code,Score,Total,Percentage\n'+RESULTS.map(r=>`${r.rank},"${r.name||''}","${r.phone||''}",${r.code||''},${r.score||0},${r.total||0},${r.pct||''}`).join('\n'),'results.csv');function download(text,name){let blob=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()}
+
+
+// Version J - Portal Dashboard
+window.loadPortalStats = async () => {
+  try {
+    const examsSnap = await getDocs(collection(db, 'exams'));
+    const studentsSnap = await getDocs(collection(db, 'students'));
+
+    let examCount = 0;
+    let attemptCount = 0;
+    const courses = new Set();
+
+    for (const examDoc of examsSnap.docs) {
+      examCount++;
+      const e = examDoc.data();
+      if (e.branding && e.branding.examCategory) courses.add(e.branding.examCategory);
+      const attemptsSnap = await getDocs(collection(db, 'exams', examDoc.id, 'attempts'));
+      attemptCount += attemptsSnap.size;
+    }
+
+    document.getElementById('portalStats').innerHTML = `
+      <div class="stat"><div class="label">Total Exams</div><div class="value">${examCount}</div></div>
+      <div class="stat"><div class="label">Total Students</div><div class="value">${studentsSnap.size}</div></div>
+      <div class="stat"><div class="label">Total Attempts</div><div class="value">${attemptCount}</div></div>
+      <div class="stat"><div class="label">Active Courses</div><div class="value">${courses.size}</div></div>`;
+  } catch (e) {
+    alert('Portal stats failed: ' + e.message);
+  }
+};
