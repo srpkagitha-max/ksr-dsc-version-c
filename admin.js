@@ -50,3 +50,149 @@ window.loadStudents = async () => {
     alert('Students load failed: ' + e.message);
   }
 };
+
+
+// Version K Phase 1 - Super Admin + Institute Management
+function safeInstId(v) {
+  return String(v || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+}
+
+window.clearInstituteForm = () => {
+  ['instId','instName','instAdminEmail','instContact','instExpiry','instLogo','instAddress'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('instPlan').value = 'Free';
+  document.getElementById('instStatus').value = 'Active';
+  document.getElementById('instTheme').value = '#0b57d0';
+};
+
+window.saveInstitute = async () => {
+  const id = safeInstId(document.getElementById('instId').value);
+  const name = document.getElementById('instName').value.trim();
+
+  if (!id || !name) {
+    return alert('Institute ID మరియు Institute Name తప్పనిసరి');
+  }
+
+  const data = {
+    instituteId: id,
+    name,
+    adminEmail: document.getElementById('instAdminEmail').value.trim(),
+    contact: document.getElementById('instContact').value.trim(),
+    plan: document.getElementById('instPlan').value,
+    status: document.getElementById('instStatus').value,
+    expiryDate: document.getElementById('instExpiry').value,
+    logoUrl: document.getElementById('instLogo').value.trim(),
+    themeColor: document.getElementById('instTheme').value || '#0b57d0',
+    address: document.getElementById('instAddress').value.trim(),
+    updatedAt: serverTimestamp(),
+    version: 'K1-institute'
+  };
+
+  await setDoc(doc(db, 'institutes', id), data, { merge: true });
+
+  if (data.adminEmail) {
+    await setDoc(doc(db, 'instituteAdmins', data.adminEmail), {
+      email: data.adminEmail,
+      instituteId: id,
+      instituteName: name,
+      status: data.status,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+
+  alert('Institute saved successfully');
+  loadInstitutes();
+};
+
+window.loadInstitutes = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'institutes'));
+    let html = '<h3>🏢 Institutes List</h3>';
+    let count = 0;
+
+    snap.forEach(d => {
+      const x = d.data();
+      const statusClass = x.status === 'Active' ? 'status-active' : 'status-blocked';
+      html += `<div class="inst-card">
+        <div class="inst-head">
+          ${x.logoUrl ? `<img src="${x.logoUrl}" class="inst-logo-small">` : '<div class="inst-logo-small"></div>'}
+          <div>
+            <b>${x.name || ''}</b> <span class="pill">${d.id}</span><br>
+            <span class="${statusClass}">${x.status || ''}</span> | ${x.plan || 'Free'} | Expiry: ${x.expiryDate || '-'}
+          </div>
+        </div>
+        <p class="small">
+          Admin: ${x.adminEmail || '-'}<br>
+          Contact: ${x.contact || '-'}<br>
+          Address: ${x.address || '-'}
+        </p>
+        <button class="s" onclick="editInstitute('${d.id}')">Edit</button>
+        <button class="o" onclick="useInstituteBranding('${d.id}')">Use Branding</button>
+        <button class="d" onclick="blockInstitute('${d.id}')">Block</button>
+        <button class="g" onclick="activateInstitute('${d.id}')">Activate</button>
+      </div>`;
+      count++;
+    });
+
+    document.getElementById('institutesBox').innerHTML = count ? html : '<p>No institutes found.</p>';
+  } catch (e) {
+    alert('Load institutes failed: ' + e.message);
+  }
+};
+
+window.editInstitute = async (id) => {
+  const d = await getDoc(doc(db, 'institutes', id));
+  if (!d.exists()) return alert('Institute not found');
+  const x = d.data();
+
+  document.getElementById('instId').value = id;
+  document.getElementById('instName').value = x.name || '';
+  document.getElementById('instAdminEmail').value = x.adminEmail || '';
+  document.getElementById('instContact').value = x.contact || '';
+  document.getElementById('instPlan').value = x.plan || 'Free';
+  document.getElementById('instStatus').value = x.status || 'Active';
+  document.getElementById('instExpiry').value = x.expiryDate || '';
+  document.getElementById('instLogo').value = x.logoUrl || '';
+  document.getElementById('instTheme').value = x.themeColor || '#0b57d0';
+  document.getElementById('instAddress').value = x.address || '';
+
+  alert('Institute loaded for editing');
+};
+
+window.blockInstitute = async (id) => {
+  if (!confirm('Block this institute?')) return;
+  await setDoc(doc(db, 'institutes', id), { status: 'Blocked', updatedAt: serverTimestamp() }, { merge: true });
+  loadInstitutes();
+};
+
+window.activateInstitute = async (id) => {
+  await setDoc(doc(db, 'institutes', id), { status: 'Active', updatedAt: serverTimestamp() }, { merge: true });
+  loadInstitutes();
+};
+
+window.useInstituteBranding = async (id) => {
+  const d = await getDoc(doc(db, 'institutes', id));
+  if (!d.exists()) return alert('Institute not found');
+  const x = d.data();
+
+  document.getElementById('instituteName').value = x.name || '';
+  document.getElementById('instituteTagline').value = x.plan ? `${x.plan} Online Exam Platform` : 'Online Exam Platform';
+  document.getElementById('logoUrl').value = x.logoUrl || '';
+  document.getElementById('contactNo').value = x.contact || '';
+  document.getElementById('themeColor').value = x.themeColor || '#0b57d0';
+
+  if (typeof applyBranding === 'function') {
+    applyBranding({
+      instituteName: x.name || '',
+      instituteTagline: x.plan ? `${x.plan} Online Exam Platform` : 'Online Exam Platform',
+      logoUrl: x.logoUrl || '',
+      contactNo: x.contact || '',
+      themeColor: x.themeColor || '#0b57d0',
+      examCategory: document.getElementById('examCategory').value || 'Exam'
+    });
+  }
+
+  alert('Institute branding applied to exam form');
+};
