@@ -28,30 +28,25 @@ window.printAnswerKey=()=>{if(!CURRENT_EXAM)return alert('First Load Results');l
 window.downloadResults=()=>download('Rank,Name,Phone,Code,Score,Total,Percentage\n'+RESULTS.map(r=>`${r.rank},"${r.name||''}","${r.phone||''}",${r.code||''},${r.score||0},${r.total||0},${r.pct||''}`).join('\n'),'results.csv');function download(text,name){let blob=new Blob([text],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click()}
 
 
-// Version J - Portal Dashboard
-window.loadPortalStats = async () => {
+// Version J Phase 2 - Student Manager
+window.loadStudents = async () => {
   try {
-    const examsSnap = await getDocs(collection(db, 'exams'));
-    const studentsSnap = await getDocs(collection(db, 'students'));
+    const q = document.getElementById('adminStudentSearch').value.trim().toLowerCase();
+    const snap = await getDocs(collection(db, 'students'));
+    let rows = [];
+    snap.forEach(d => {
+      const s = d.data();
+      const text = `${s.name||''} ${s.phone||''} ${s.course||''} ${s.institute||''}`.toLowerCase();
+      if (!q || text.includes(q)) rows.push(s);
+    });
 
-    let examCount = 0;
-    let attemptCount = 0;
-    const courses = new Set();
-
-    for (const examDoc of examsSnap.docs) {
-      examCount++;
-      const e = examDoc.data();
-      if (e.branding && e.branding.examCategory) courses.add(e.branding.examCategory);
-      const attemptsSnap = await getDocs(collection(db, 'exams', examDoc.id, 'attempts'));
-      attemptCount += attemptsSnap.size;
-    }
-
-    document.getElementById('portalStats').innerHTML = `
-      <div class="stat"><div class="label">Total Exams</div><div class="value">${examCount}</div></div>
-      <div class="stat"><div class="label">Total Students</div><div class="value">${studentsSnap.size}</div></div>
-      <div class="stat"><div class="label">Total Attempts</div><div class="value">${attemptCount}</div></div>
-      <div class="stat"><div class="label">Active Courses</div><div class="value">${courses.size}</div></div>`;
+    let html = `<table><tr><th>Name</th><th>Phone</th><th>Course</th><th>District</th><th>Qualification</th><th>Institute</th></tr>`;
+    rows.forEach(s => {
+      html += `<tr><td>${s.name||''}</td><td>${s.phone||''}</td><td>${s.course||''}</td><td>${s.district||''}</td><td>${s.qualification||''}</td><td>${s.institute||''}</td></tr>`;
+    });
+    html += '</table>';
+    document.getElementById('studentsBox').innerHTML = rows.length ? html : '<p>No students found.</p>';
   } catch (e) {
-    alert('Portal stats failed: ' + e.message);
+    alert('Students load failed: ' + e.message);
   }
 };

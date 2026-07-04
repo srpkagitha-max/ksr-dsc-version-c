@@ -1,22 +1,20 @@
-<!DOCTYPE html><html lang="te"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KSR Online Exam - Version J</title><link rel="stylesheet" href="style.css"></head><body><div class="header" id="siteHeader"><div class="wrap top"><div class="brand-row"><img id="studentLogo" class="inst-logo hide" alt="Logo"><div><div class="brand" id="mainTitle">KSR Online Exam Platform</div><div class="sub" id="mainSub">Student Registration + Exam Portal</div></div></div><div class="nav"><a href="admin.html">Admin</a></div></div></div><div class="wrap"><div class="card">
-      <h2>👨‍🎓 Student Registration</h2>
+<!DOCTYPE html><html lang="te"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KSR Online Exam - Version J Phase 2</title><link rel="stylesheet" href="style.css"></head><body><div class="header" id="siteHeader"><div class="wrap top"><div class="brand-row"><img id="studentLogo" class="inst-logo hide" alt="Logo"><div><div class="brand" id="mainTitle">KSR Online Exam Platform</div><div class="sub" id="mainSub">Student Profile + My Exams Portal</div></div></div><div class="nav"><a href="admin.html">Admin</a></div></div></div><div class="wrap"><div class="card">
+      <h2>👨‍🎓 Student Portal</h2>
       <div class="grid">
-        <div><label>Full Name</label><input id="regName" placeholder="Student full name"></div>
-        <div><label>Phone</label><input id="regPhone" inputmode="numeric" placeholder="Phone number"></div>
-      </div>
-      <div class="grid">
-        <div><label>Course / Category</label>
-          <select id="regCourse">
+        <div><label>Phone Number</label><input id="portalPhone" inputmode="numeric" placeholder="Registered phone number"></div>
+        <div><label>Course</label>
+          <select id="portalCourse">
             <option>DSC</option><option>Bank</option><option>Constable</option><option>SI</option>
             <option>Groups</option><option>TET</option><option>Railway</option><option>APPSC</option><option>TSPSC</option>
           </select>
         </div>
-        <div><label>Institute Code / Name</label><input id="regInstitute" placeholder="Institute name"></div>
       </div>
-      <button class="p" onclick="registerStudent()">Register Student</button>
-      <button class="s" onclick="loadAvailableExams()">Load Available Exams</button>
-      <p id="regMsg" class="small"></p>
-      <div id="availableExams"></div>
+      <div class="portal-tabs">
+        <button class="p" onclick="showRegisterBox()">Register / Edit Profile</button>
+        <button class="g" onclick="loadMyDashboard()">My Dashboard</button>
+        <button class="s" onclick="loadAvailableExams()">Available Exams</button>
+      </div>
+      <div id="studentPortalBox" class="small"></div>
     </div>
 
     <div id="login" class="card"><h2 id="loginTitle">Student Login</h2><div class="notice">Admin ఇచ్చిన <b>Exam ID</b> + <b>Exam Code</b> తో మాత్రమే exam open అవుతుంది.</div><div class="grid"><div><label>Name</label><input id="stName" autocomplete="name" placeholder="Student name"></div><div><label>Phone</label><input id="stPhone" inputmode="numeric" placeholder="Phone number"></div></div><div class="grid"><div><label>Exam ID</label><input id="stExamId" placeholder="DSC001"></div><div><label>Exam Code</label><input id="stCode" placeholder="DSC123456"></div></div><button class="p" onclick="printHallTicketFromLogin()">🎫 Hall Ticket</button><button class="p" onclick="studentLogin()">Start Exam</button><p id="loginMsg" class="small"></p></div><div id="exam" class="hide"><div class="card top"><div><b id="examTitle"></b><br><span id="prog" class="small"></span></div><div><span class="small">Warnings: <b id="warns">0</b></span> <span id="timer" class="timer">00:00</span></div></div><div class="card" id="qcard"></div><div class="card top"><button class="s" onclick="prev()">Previous</button><button class="o" onclick="mark()">Mark Review</button><button class="p" onclick="next()">Next</button><button class="d" onclick="submitExam(false)">Submit</button></div><div class="card"><b>Question Palette</b><div id="palette" class="pal"></div></div></div><div id="result" class="card result-card hide"></div></div><script type="module" src="student.js"></script></body></html>
