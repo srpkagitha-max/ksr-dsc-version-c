@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Phase 2</title>
+  <title>KSR Admin - Version K Complete</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="adminLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="adminBrand">KSR Exam Admin Dashboard</div>
-          <div class="sub" id="adminSub">Version K.2 - Question Editor + Institute Filter</div>
+          <div class="sub" id="adminSub">Version K Complete - All-in-One Master Build</div>
         </div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
@@ -32,14 +32,14 @@
 
     <div id="panel" class="hide">
       <div class="card top">
-        <h2>Dashboard <span class="badge">Version K.2</span></h2>
+        <h2>Dashboard <span class="badge">Version K Complete</span></h2>
         <button class="d" onclick="logout()">Logout</button>
       </div>
 
       <div class="card">
         <div class="k-section-title">
           <h2>👑 Super Admin - Institute Management</h2>
-          <span class="badge">K Phase 1</span>
+          <span class="badge">K Complete</span>
         </div>
         <div class="notice">ఇక్కడ institutes add/edit/manage చేయవచ్చు. ఈ section కనిపిస్తే Version K correct గా upload అయింది.</div>
 
@@ -97,6 +97,17 @@
         <h2>📚 Exam Manager</h2>
         <button class="g" onclick="loadExamManager()">Load All Exams</button>
         <div id="examManager"></div>
+      </div>
+
+
+      <div class="card">
+        <h2>✏️ Question Editor</h2>
+        <div class="notice">Exam upload చేసిన తర్వాత ఒక్క question మాత్రమే edit/delete/add/reorder చేయడానికి ఈ section వాడండి.</div>
+        <div class="grid">
+          <input id="qeExamId" placeholder="Exam ID ex: DSC001">
+          <button class="g" onclick="loadQuestionsForEdit()">Load Questions</button>
+        </div>
+        <div id="questionsEditorBox"></div>
       </div>
 
       <div class="card">
