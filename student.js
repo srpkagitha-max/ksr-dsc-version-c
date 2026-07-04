@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { doc, getDoc, setDoc, getDocs, collection, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
-let EXAM=null,Q=[],cur=0,ans=[],rev=[],seconds=0,totalSeconds=0,timerInt=null,student='',phone='',code='',eid='',warnings=0,started=false;const $=id=>document.getElementById(id);
+let EXAM=null,Q=[],cur=0,ans=[],rev=[],seconds=0,totalSeconds=0,timerInt=null,student='',phone='',code='',eid='',warnings=0,started=false; const $=id=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function windowCheck(){let now=new Date();if(EXAM.start&&now<new Date(EXAM.start))return'NOT_STARTED';if(EXAM.end&&now>new Date(EXAM.end))return'CLOSED';return'OPEN'}
