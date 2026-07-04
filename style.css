@@ -7,8 +7,12 @@
 .exam-card h3{margin:0 0 6px}
 .mini-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
 
+/* Version K Phase 1 Full Build */
+.k-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.k-section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .inst-card{border:1px solid #dbe7ff;background:#f8fbff;border-radius:16px;padding:14px;margin:10px 0}
 .inst-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .inst-logo-small{width:48px;height:48px;border-radius:12px;object-fit:cover;background:#fff;border:1px solid #ddd}
 .status-active{color:#137333;font-weight:900}
 .status-blocked{color:#d93025;font-weight:900}
+.role-box{background:#eef4ff;border:1px solid #dbe7ff;border-radius:14px;padding:12px;margin:8px 0}

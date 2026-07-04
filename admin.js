@@ -52,10 +52,39 @@ window.loadStudents = async () => {
 };
 
 
-// Version K Phase 1 - Super Admin + Institute Management
+// ================= Version K Phase 1 Full Build =================
+// Super Admin + Institute Management + Institute Access Metadata
+
 function safeInstId(v) {
   return String(v || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 }
+
+function adminEmail() {
+  return auth.currentUser ? auth.currentUser.email : '';
+}
+
+window.checkAdminAccess = async () => {
+  const email = adminEmail();
+  document.getElementById('currentAdminEmail').textContent = email || '-';
+
+  if (!email) {
+    document.getElementById('currentInstituteAccess').textContent = 'Not logged in';
+    return;
+  }
+
+  try {
+    const d = await getDoc(doc(db, 'instituteAdmins', email));
+    if (d.exists()) {
+      const x = d.data();
+      document.getElementById('currentInstituteAccess').textContent =
+        `${x.instituteName || x.instituteId} (${x.status || 'Active'})`;
+    } else {
+      document.getElementById('currentInstituteAccess').textContent = 'Super Admin / All Institutes';
+    }
+  } catch (e) {
+    document.getElementById('currentInstituteAccess').textContent = 'Access check failed';
+  }
+};
 
 window.clearInstituteForm = () => {
   ['instId','instName','instAdminEmail','instContact','instExpiry','instLogo','instAddress'].forEach(id => {
@@ -86,8 +115,9 @@ window.saveInstitute = async () => {
     logoUrl: document.getElementById('instLogo').value.trim(),
     themeColor: document.getElementById('instTheme').value || '#0b57d0',
     address: document.getElementById('instAddress').value.trim(),
+    createdBy: adminEmail(),
     updatedAt: serverTimestamp(),
-    version: 'K1-institute'
+    version: 'K1-full-institute'
   };
 
   await setDoc(doc(db, 'institutes', id), data, { merge: true });
@@ -98,6 +128,8 @@ window.saveInstitute = async () => {
       instituteId: id,
       instituteName: name,
       status: data.status,
+      plan: data.plan,
+      expiryDate: data.expiryDate,
       updatedAt: serverTimestamp()
     }, { merge: true });
   }
@@ -164,11 +196,23 @@ window.editInstitute = async (id) => {
 window.blockInstitute = async (id) => {
   if (!confirm('Block this institute?')) return;
   await setDoc(doc(db, 'institutes', id), { status: 'Blocked', updatedAt: serverTimestamp() }, { merge: true });
+
+  const d = await getDoc(doc(db, 'institutes', id));
+  if (d.exists() && d.data().adminEmail) {
+    await setDoc(doc(db, 'instituteAdmins', d.data().adminEmail), { status: 'Blocked', updatedAt: serverTimestamp() }, { merge: true });
+  }
+
   loadInstitutes();
 };
 
 window.activateInstitute = async (id) => {
   await setDoc(doc(db, 'institutes', id), { status: 'Active', updatedAt: serverTimestamp() }, { merge: true });
+
+  const d = await getDoc(doc(db, 'institutes', id));
+  if (d.exists() && d.data().adminEmail) {
+    await setDoc(doc(db, 'instituteAdmins', d.data().adminEmail), { status: 'Active', updatedAt: serverTimestamp() }, { merge: true });
+  }
+
   loadInstitutes();
 };
 
@@ -195,4 +239,15 @@ window.useInstituteBranding = async (id) => {
   }
 
   alert('Institute branding applied to exam form');
+};
+
+// Patch uploadExam to save instituteId when selected in Institute form
+const originalUploadExam_K1 = window.uploadExam;
+window.uploadExam = async () => {
+  const instId = safeInstId(document.getElementById('instId')?.value || '');
+  await originalUploadExam_K1();
+  const examId = document.getElementById('examId')?.value.trim().toUpperCase();
+  if (instId && examId) {
+    await setDoc(doc(db, 'exams', examId), { instituteId: instId, instituteLinkedAt: serverTimestamp() }, { merge: true });
+  }
 };
