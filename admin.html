@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Phase 3</title>
+  <title>KSR Admin - Version K Phase 4</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="adminLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="adminBrand">KSR Exam Admin Dashboard</div>
-          <div class="sub" id="adminSub">Version K Phase 3 - Logs + Backup + Delete</div>
+          <div class="sub" id="adminSub">Version K Phase 4 - Bulk Import + QR Verify</div>
         </div>
       </div>
       <div class="nav"><a href="index.html">Student Page</a></div>
@@ -101,6 +101,34 @@
         <label>Restore JSON</label>
         <textarea id="restoreJson" placeholder="Backup JSON paste చేయండి..."></textarea>
         <button class="o" onclick="restoreBackupFromText()">Restore Backup</button>
+      </div>
+
+
+      <div class="card">
+        <h2>📥 Bulk Import Tools</h2>
+        <div class="notice">CSV format తో bulk students/questions import చేయండి. Excel లో CSVగా save చేసి paste చేయవచ్చు.</div>
+
+        <h3>👨‍🎓 Bulk Student Import</h3>
+        <textarea id="bulkStudentsCsv" placeholder="name,phone,course,institute,district,qualification\nKumar,9876543210,DSC,KSR,Vijayawada,B.Ed"></textarea>
+        <button class="p" onclick="importStudentsCsv()">Import Students CSV</button>
+
+        <h3>📚 Bulk Questions Import</h3>
+        <div class="grid">
+          <input id="bulkQuestionExamId" placeholder="Exam ID ex: DSC001">
+          <button class="s" onclick="fillBulkExamId()">Use Current Exam ID</button>
+        </div>
+        <textarea id="bulkQuestionsCsv" placeholder="subject,question,optionA,optionB,optionC,optionD,answer\nGeneral,2+2?,3,4,5,6,B"></textarea>
+        <button class="p" onclick="importQuestionsCsv()">Import Questions CSV</button>
+      </div>
+
+      <div class="card">
+        <h2>🔎 Certificate / Result Verification</h2>
+        <div class="grid">
+          <input id="verifyExamId" placeholder="Exam ID">
+          <input id="verifyCode" placeholder="Exam Code / Certificate Code">
+        </div>
+        <button class="g" onclick="verifyCertificate()">Verify</button>
+        <div id="verifyBox"></div>
       </div>
 
       <div class="card">

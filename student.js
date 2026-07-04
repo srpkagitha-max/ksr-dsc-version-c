@@ -14,3 +14,35 @@ document.addEventListener('contextmenu',e=>{if(started)e.preventDefault()});docu
 window.studentLogin=async()=>{student=$('stName').value.trim();phone=$('stPhone').value.trim();eid=$('stExamId').value.trim().toUpperCase();code=$('stCode').value.trim().toUpperCase().replace(/\s+/g,'');if(!student||!phone||!eid||!code)return alert('Name, Phone, Exam ID, Exam Code అన్ని enter చేయండి');try{let ex=await getDoc(doc(db,'exams',eid));if(!ex.exists())return alert('Invalid Exam ID');EXAM=ex.data();applyBranding(EXAM.branding);let cd=await getDoc(doc(db,'exams',eid,'codes',code));if(!cd.exists())return alert('Invalid code');let codeData=cd.data();if(codeData.used===true)return alert('This code already used');let status=windowCheck();if(status==='NOT_STARTED')return alert('Exam ఇంకా start కాలేదు');if(status==='CLOSED')return alert('Exam closed');Q=JSON.parse(JSON.stringify(EXAM.questions||[])).map((q,qi)=>({originalIndex:qi,subject:q.subject,q:q.q,o:q.o.map((x,i)=>({text:x,correct:i===q.a}))}));if(!Q.length)return alert('Questions not found');if(EXAM.shuffleQ)shuffle(Q);if(EXAM.shuffleO)Q.forEach(q=>shuffle(q.o));ans=Array(Q.length).fill(null);rev=Array(Q.length).fill(false);totalSeconds=Q.length*(EXAM.sec||45);seconds=totalSeconds;$('examTitle').innerText=EXAM.title||eid;$('login').classList.add('hide');$('exam').classList.remove('hide');started=true;show();tick();timerInt=setInterval(()=>{seconds--;tick();if(seconds<=0||windowCheck()==='CLOSED')submitExam(true)},1000)}catch(e){alert('Login error: '+e.message)}};
 function tick(){let m=Math.floor(seconds/60),s=seconds%60;$('timer').innerText=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}function show(){let q=Q[cur];$('prog').innerText='Question '+(cur+1)+' of '+Q.length+' | '+(q.subject||'General');let html='<div class="q">'+esc(q.q)+'</div>';q.o.forEach((op,i)=>html+='<label class="opt"><input type="radio" name="op" '+(ans[cur]===i?'checked':'')+' onchange="sel('+i+')"> '+String.fromCharCode(65+i)+') '+esc(op.text)+'</label>');$('qcard').innerHTML=html;pal()}window.sel=i=>{ans[cur]=i;pal()};window.next=()=>{if(cur<Q.length-1){cur++;show()}};window.prev=()=>{if(cur>0){cur--;show()}};window.mark=()=>{rev[cur]=!rev[cur];pal()};window.go=i=>{cur=i;show()};function pal(){let html='';for(let i=0;i<Q.length;i++)html+='<div class="num '+(ans[i]!=null?'ans ':'')+(rev[i]?'rev ':'')+(i===cur?'cur':'')+'" onclick="go('+i+')">'+(i+1)+'</div>';$('palette').innerHTML=html}
 window.submitExam=async(auto)=>{if(submitting)return;if(!auto&&!confirm('Submit చేయాలా?'))return;submitting=true;try{started=false;if(timerInt)clearInterval(timerInt);$('qcard').innerHTML='<h2>Submitting...</h2><p>దయచేసి wait చేయండి.</p>';let correct=0,wrong=0,attempted=0;let answerDetails=Q.map((q,i)=>{let selectedIndex=ans[i],selected=selectedIndex!=null?q.o[selectedIndex]:null,correctOption=q.o.find(x=>x.correct),isCorrect=!!(selected&&selected.correct);if(selectedIndex!=null){attempted++;if(isCorrect)correct++;else wrong++}return{originalIndex:q.originalIndex,qNo:i+1,question:q.q,selectedText:selected?selected.text:'',correctText:correctOption?correctOption.text:'',isCorrect}});let score=(correct*(EXAM.marks||1))-(wrong*(EXAM.neg||0)),total=Q.length*(EXAM.marks||1),pctNum=Math.round((score/total)*10000)/100,pct=pctNum+'%',timeTakenSec=Math.max(0,totalSeconds-seconds);await setDoc(doc(db,'exams',eid,'attempts',code),{name:student,phone,code,examId:eid,score,total,pct,correct,wrong,attempted,warnings,timeTakenSec,answerDetails,submittedAt:serverTimestamp()},{merge:false});await setDoc(doc(db,'exams',eid,'codes',code),{used:true,studentName:student,phone,usedAt:serverTimestamp()},{merge:true});let rank=await calculateCurrentRank(score,timeTakenSec),passMark=Number(EXAM.passMark||35),statusText=pctNum>=passMark?'PASS ✅':'FAIL ❌',inst=EXAM.branding?.instituteName||'KSR Exam Platform';$('exam').classList.add('hide');$('result').classList.remove('hide');$('result').innerHTML=EXAM.showResult?`<h2>🎉 ${inst}</h2><h3>Exam Submitted Successfully</h3><div class="big-rank">${rank==='-'?'🏆':medal(rank)} Rank ${rank}</div><h3>${esc(student)}</h3><p><b>Score:</b> ${score} / ${total}</p><p><b>Percentage:</b> ${pct}</p><p><b>Time Taken:</b> ${formatTime(timeTakenSec)}</p><p><b>Status:</b> <span class="${pctNum>=passMark?'pass':'fail'}">${statusText}</span></p>`:'<h2>Submitted Successfully</h2>';alert('Submitted successfully')}catch(e){submitting=false;alert('Submit failed: '+e.message);show()}}
+
+
+// ================= Version K Phase 4 - Public Certificate Verify =================
+window.publicVerifyCertificate = async () => {
+  const examId = (document.getElementById('publicVerifyExamId').value || '').trim().toUpperCase();
+  const code = (document.getElementById('publicVerifyCode').value || '').trim().toUpperCase();
+  const box = document.getElementById('publicVerifyBox');
+  if (!examId || !code) return alert('Exam ID + Code enter చేయండి');
+
+  try {
+    const ex = await getDoc(doc(db, 'exams', examId));
+    const at = await getDoc(doc(db, 'exams', examId, 'attempts', code));
+    if (!ex.exists() || !at.exists()) {
+      box.innerHTML = '<div class="verify-card"><h3 class="bad">Invalid / Not Found</h3></div>';
+      return;
+    }
+    const e = ex.data(), a = at.data(), b = e.branding || {};
+    const pct = (Number(a.score||0)/Number(a.total||1))*100;
+    const status = pct >= Number(e.passMark || 35) ? 'PASS ✅' : 'FAIL ❌';
+    box.innerHTML = `<div class="verify-card">
+      <h3>✅ Verified</h3>
+      <p><b>Institute:</b> ${b.instituteName || 'KSR'}</p>
+      <p><b>Student:</b> ${a.name || ''}</p>
+      <p><b>Exam:</b> ${e.title || examId}</p>
+      <p><b>Score:</b> ${a.score}/${a.total} (${a.pct || ''})</p>
+      <p><b>Status:</b> ${status}</p>
+      <div class="qr-box">VERIFY: ${examId}-${code}</div>
+    </div>`;
+  } catch(e) {
+    alert('Verify failed: ' + e.message);
+  }
+};

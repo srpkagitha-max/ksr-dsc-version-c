@@ -8,3 +8,6 @@
 
 .log-card{border-left:5px solid var(--blue);background:#f8fbff;border-radius:14px;padding:12px;margin:8px 0;border-top:1px solid #dbe7ff;border-right:1px solid #dbe7ff;border-bottom:1px solid #dbe7ff}
 .backup-box{font-size:12px;max-height:320px;overflow:auto}
+
+.verify-card{border:2px solid #dbe7ff;background:#f8fbff;border-radius:18px;padding:16px;margin:12px 0;text-align:left}
+.qr-box{display:inline-block;border:2px dashed var(--blue);padding:12px;border-radius:12px;font-weight:900;margin:10px}

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Online Exam - Version K Phase 3</title>
+  <title>KSR Online Exam - Version K Phase 4</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
         <img id="studentLogo" class="inst-logo hide" alt="Logo">
         <div>
           <div class="brand" id="mainTitle">KSR Online Exam Platform</div>
-          <div class="sub" id="mainSub">Version K Phase 3 - Multi-Institute CBT Platform</div>
+          <div class="sub" id="mainSub">Version K Phase 4 - Multi-Institute CBT Platform</div>
         </div>
       </div>
       <div class="nav"><a href="admin.html">Admin</a></div>
@@ -38,6 +38,17 @@
         <button class="s" onclick="loadAvailableExams()">Available Exams</button>
       </div>
       <div id="studentPortalBox" class="small"></div>
+    </div>
+
+
+    <div class="card">
+      <h2>🔎 Certificate / Result Verify</h2>
+      <div class="grid">
+        <input id="publicVerifyExamId" placeholder="Exam ID">
+        <input id="publicVerifyCode" placeholder="Exam Code / Certificate Code">
+      </div>
+      <button class="g" onclick="publicVerifyCertificate()">Verify Certificate</button>
+      <div id="publicVerifyBox"></div>
     </div>
 
     <div id="login" class="card">

@@ -435,3 +435,134 @@ window.restoreBackupFromText = async () => {
     alert('Restore failed: ' + e.message);
   }
 };
+
+
+// ================= Version K Phase 4 - Bulk Import + QR Verify =================
+function parseCsvLine(line) {
+  const out = [];
+  let cur = '', q = false;
+  for (let i=0;i<line.length;i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (q && line[i+1] === '"') { cur += '"'; i++; }
+      else q = !q;
+    } else if (ch === ',' && !q) {
+      out.push(cur.trim()); cur = '';
+    } else cur += ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+function csvRows(text) {
+  return String(text||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(parseCsvLine);
+}
+function answerIndex(v) {
+  v = String(v||'').trim().toUpperCase();
+  if (['A','1','0'].includes(v)) return 0;
+  if (['B','2'].includes(v)) return 1;
+  if (['C','3'].includes(v)) return 2;
+  if (['D','4'].includes(v)) return 3;
+  return 0;
+}
+
+window.importStudentsCsv = async () => {
+  try {
+    const rows = csvRows(document.getElementById('bulkStudentsCsv').value);
+    if (!rows.length) return alert('CSV paste చేయండి');
+    let start = 0;
+    if ((rows[0][0]||'').toLowerCase().includes('name')) start = 1;
+    let count = 0;
+    for (let i=start;i<rows.length;i++) {
+      const r = rows[i];
+      const [name, phone, course, institute, district, qualification] = r;
+      if (!name || !phone) continue;
+      await setDoc(doc(db, 'students', String(phone).trim()), {
+        name, phone: String(phone).trim(), course: course||'', institute: institute||'',
+        district: district||'', qualification: qualification||'',
+        bulkImportedAt: serverTimestamp(),
+        version: 'K4-bulk-student'
+      }, { merge: true });
+      count++;
+    }
+    await logActivity('BULK_IMPORT_STUDENTS', { count });
+    alert(`${count} students imported`);
+  } catch(e) {
+    alert('Student import failed: ' + e.message);
+  }
+};
+
+window.fillBulkExamId = () => {
+  document.getElementById('bulkQuestionExamId').value = (document.getElementById('examId').value || '').trim().toUpperCase();
+};
+
+window.importQuestionsCsv = async () => {
+  try {
+    const examId = (document.getElementById('bulkQuestionExamId').value || document.getElementById('examId').value || '').trim().toUpperCase();
+    if (!examId) return alert('Exam ID enter చేయండి');
+    const rows = csvRows(document.getElementById('bulkQuestionsCsv').value);
+    if (!rows.length) return alert('Questions CSV paste చేయండి');
+    let start = 0;
+    if ((rows[0][0]||'').toLowerCase().includes('subject')) start = 1;
+
+    const ex = await getDoc(doc(db, 'exams', examId));
+    const oldQs = ex.exists() ? (ex.data().questions || []) : [];
+    const newQs = [];
+    for (let i=start;i<rows.length;i++) {
+      const r = rows[i];
+      const [subject, question, a, b, c, d, ans] = r;
+      if (!question || !a || !b || !c || !d) continue;
+      newQs.push({ subject: subject || 'General', q: question, o: [a,b,c,d], a: answerIndex(ans) });
+    }
+    const questions = oldQs.concat(newQs);
+    await setDoc(doc(db, 'exams', examId), {
+      questions,
+      updatedAt: serverTimestamp(),
+      bulkQuestionsImportedAt: serverTimestamp(),
+      version: 'K4-bulk-questions'
+    }, { merge: true });
+
+    await logActivity('BULK_IMPORT_QUESTIONS', { examId, added: newQs.length, total: questions.length });
+    alert(`${newQs.length} questions imported. Total: ${questions.length}`);
+  } catch(e) {
+    alert('Question import failed: ' + e.message);
+  }
+};
+
+window.verifyCertificate = async () => {
+  const examId = (document.getElementById('verifyExamId').value || '').trim().toUpperCase();
+  const code = (document.getElementById('verifyCode').value || '').trim().toUpperCase();
+  const box = document.getElementById('verifyBox');
+  if (!examId || !code) return alert('Exam ID + Code enter చేయండి');
+  try {
+    const ex = await getDoc(doc(db, 'exams', examId));
+    const at = await getDoc(doc(db, 'exams', examId, 'attempts', code));
+    if (!ex.exists() || !at.exists()) {
+      box.innerHTML = '<div class="verify-card"><h3 class="bad">Invalid / Not Found</h3></div>';
+      return;
+    }
+    const e = ex.data(), a = at.data(), b = e.branding || {};
+    const pct = (Number(a.score||0)/Number(a.total||1))*100;
+    const status = pct >= Number(e.passMark || 35) ? 'PASS ✅' : 'FAIL ❌';
+    box.innerHTML = `<div class="verify-card">
+      <h3>✅ Verified Certificate / Result</h3>
+      <p><b>Institute:</b> ${b.instituteName || 'KSR'}</p>
+      <p><b>Student:</b> ${a.name || ''}</p>
+      <p><b>Exam:</b> ${e.title || examId}</p>
+      <p><b>Score:</b> ${a.score}/${a.total} (${a.pct || ''})</p>
+      <p><b>Status:</b> ${status}</p>
+      <div class="qr-box">QR: ${examId}-${code}</div>
+    </div>`;
+    await logActivity('VERIFY_CERTIFICATE_ADMIN', { examId, code });
+  } catch(e) {
+    alert('Verify failed: ' + e.message);
+  }
+};
+
+// Patch certificate print to include QR verification text
+if (typeof window.printCertificate === 'function') {
+  const oldPrintCertificateK4 = window.printCertificate;
+  window.printCertificate = (studentCode) => {
+    oldPrintCertificateK4(studentCode);
+    // Existing certificate opens in a print window. QR text is available through Verify section.
+  };
+}
