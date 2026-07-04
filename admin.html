@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KSR Admin - Version K Phase 5</title>
+  <title>KSR Admin - Version K Phase 5 Login Fix</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,12 +40,12 @@
       <div class="card">
         <h2>🚀 Quick Navigation</h2>
         <div class="k-tabs">
-          <button class="s" onclick="scrollToCard('superAdminCard')">Institutes</button>
-          <button class="s" onclick="scrollToCard('reportsCard')">Reports</button>
-          <button class="s" onclick="scrollToCard('studentManagerCard')">Students</button>
-          <button class="s" onclick="scrollToCard('examManagerCard')">Exams</button>
-          <button class="s" onclick="scrollToCard('questionEditorCard')">Questions</button>
-          <button class="s" onclick="scrollToCard('leaderboardCard')">Leaderboard</button>
+          <button class="s" type="button" onclick="scrollToCard('superAdminCard')">Institutes</button>
+          <button class="s" type="button" onclick="scrollToCard('reportsCard')">Reports</button>
+          <button class="s" type="button" onclick="scrollToCard('studentManagerCard')">Students</button>
+          <button class="s" type="button" onclick="scrollToCard('examManagerCard')">Exams</button>
+          <button class="s" type="button" onclick="scrollToCard('questionEditorCard')">Questions</button>
+          <button class="s" type="button" onclick="scrollToCard('leaderboardCard')">Leaderboard</button>
         </div>
       </div>
 
@@ -152,9 +152,9 @@
           <input id="reportExamId" placeholder="Exam ID or leave empty for all">
         </div>
         <div class="k-tabs">
-          <button class="g" onclick="loadInstituteReports()">Load Report</button>
-          <button class="s" onclick="downloadStudentsCsv()">Download Students CSV</button>
-          <button class="s" onclick="downloadAllResultsCsv()">Download All Results CSV</button>
+          <button class="g" type="button" onclick="loadInstituteReports()">Load Report</button>
+          <button class="s" type="button" onclick="downloadStudentsCsv()">Download Students CSV</button>
+          <button class="s" type="button" onclick="downloadAllResultsCsv()">Download All Results CSV</button>
         </div>
         <div id="reportsBox"></div>
       </div>
@@ -185,7 +185,7 @@
         <div id="questionsEditorBox"></div>
       </div>
 
-      <div class="card" id="brandingCard">
+      <div class="card">
         <h2>🏫 Institute Branding</h2>
         <div class="grid">
           <div><label>Institute Name</label><input id="instituteName" value="KSR Coaching Center"></div>
